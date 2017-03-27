@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,7 +22,6 @@ import com.bart.bartweather.db.Province;
 import com.bart.bartweather.util.HttpUtil;
 import com.bart.bartweather.util.Utility;
 
-import org.json.JSONException;
 import org.litepal.crud.DataSupport;
 
 import java.io.IOException;
@@ -49,6 +49,7 @@ public class ChooseAreaFragment extends Fragment {
 
     private ArrayAdapter<String> mAdapter;
     private List<String> dataList = new ArrayList<>();
+    public static final String TAG = "Fragment";
 
     /*
     省、市、县 列表
@@ -62,7 +63,7 @@ public class ChooseAreaFragment extends Fragment {
      */
     private Province selectProvince;
     private City selectCity;
-    private County selectCounty;
+//    private County selectCounty;
 
     /*
     当前选中的级别
@@ -73,7 +74,6 @@ public class ChooseAreaFragment extends Fragment {
     onCreateView()获取控件实例
     初始化ArrayAdapter，并将它设置为ListView的适配器
      */
-
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -81,7 +81,7 @@ public class ChooseAreaFragment extends Fragment {
         backButton = (Button)view.findViewById(R.id.back_button);
         titleText = (TextView)view.findViewById(R.id.title_text);
         mListView = (ListView)view.findViewById(R.id.list_view);
-        mAdapter = new ArrayAdapter<String>(getContext(), android.R.layout.simple_list_item_1,dataList);
+        mAdapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1,dataList);
         mListView.setAdapter(mAdapter);
         return view;
     }
@@ -89,7 +89,6 @@ public class ChooseAreaFragment extends Fragment {
     /*
     onActivityCreated()给ListView和Button设置点击事件
      */
-
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -116,7 +115,7 @@ public class ChooseAreaFragment extends Fragment {
             public void onClick(View v) {
                 if (currentLevel == LEVEL_COUNTY){
                     queryCities();
-                }else if (currentLevel == LEVEL_PROVINCE){
+                }else if (currentLevel == LEVEL_CITY){
                     queryProvinces();
                 }
             }
@@ -128,6 +127,7 @@ public class ChooseAreaFragment extends Fragment {
     查询全国所有的省，优先从数据库查询，如果没有再到服务器上去查询。
      */
     private void queryProvinces(){
+        Log.d(TAG, "queryProvinces excute");
         titleText.setText("中国");
         backButton.setVisibility(View.GONE);
         mProvinceList = DataSupport.findAll(Province.class);
@@ -150,6 +150,7 @@ public class ChooseAreaFragment extends Fragment {
     查询全国所有的市，优先从数据库查询，如果没有再到服务器上去查询。
     */
     private void queryCities(){
+        Log.d(TAG, "queryCities excute");
         titleText.setText(selectProvince.getProvinceName());
         backButton.setVisibility(View.VISIBLE);
         //获得选中省下的市的数据
@@ -174,6 +175,7 @@ public class ChooseAreaFragment extends Fragment {
     查询全国所有的县，优先从数据库查询，如果没有再到服务器上去查询。
     */
     private void queryCounties(){
+        Log.d(TAG, "queryCounties excute");
         titleText.setText(selectCity.getCityName());
         backButton.setVisibility(View.VISIBLE);
         mCountyList = DataSupport.where("cityid = ?",String.valueOf(selectCity.getId())).find(County.class);//选中市
@@ -198,6 +200,7 @@ public class ChooseAreaFragment extends Fragment {
     根据传入的地址和类型从服务器上查询省市县数据
      */
     private void queryFromService(String address,final String type){
+        Log.d(TAG, "queryFromService eccute");
         showProgressDialog();
         HttpUtil.sendOkHttpRequest(address, new Callback() {
 
@@ -242,7 +245,7 @@ public class ChooseAreaFragment extends Fragment {
                             }
                         });
                     }
-                } catch (JSONException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }

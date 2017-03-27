@@ -1,6 +1,7 @@
 package com.bart.bartweather.util;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.bart.bartweather.db.City;
 import com.bart.bartweather.db.County;
@@ -21,6 +22,12 @@ import org.json.JSONObject;
 public class Utility {
     /*
     解析处理服务器返回的省级数据
+     */
+
+    /*
+    处理方法类似：
+    线使用JSONArray和JSONObjects把数据解析出来，然后组装成实体类对象，再调用save( )方法将数据存储到数据库中
+    这里数据结构比较简单不使用Gson
      */
     public static boolean handleProvinceResponse(String response) throws JSONException {
         if (!TextUtils.isEmpty(response)){
@@ -92,8 +99,10 @@ public class Utility {
             JSONObject jsonObject = new JSONObject(response);
             JSONArray jsonArray = jsonObject.getJSONArray("HeWeather");
             String weatherContent = jsonArray.getJSONObject(0).toString();
+            Log.d("WeatherActivity.this", weatherContent + "    weatherContent");
             return new Gson().fromJson(weatherContent,Weather.class);
-        } catch (JSONException e) {
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;

@@ -1,9 +1,12 @@
 package com.bart.bartweather;
 
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -48,9 +51,18 @@ public class WeatherActivity extends AppCompatActivity {
     private TextView carWashText;
     private TextView sportText;
 
+    public static final String TAG ="Activity";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //实现背景图和状态栏融合到一起的效果
+        //这个功能是Android 5.0 级以上系统才支持的
+        if (Build.VERSION.SDK_INT >= 21){
+            View decorView = getWindow().getDecorView();
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            getWindow().setStatusBarColor(Color.TRANSPARENT);
+        }
         setContentView(R.layout.activity_weather);
         //初始化控件
         bingPicImg = (ImageView) findViewById(R.id.bing_pic_img);
@@ -70,21 +82,25 @@ public class WeatherActivity extends AppCompatActivity {
         comfortText = (TextView) findViewById(R.id.comfort_text);
         carWashText = (TextView) findViewById(R.id.car_wash);
         sportText = (TextView) findViewById(R.id.sport_text);
-
-
+//        Log.d(String.valueOf(WeatherActivity.this), "控件创建完毕: ");
 
         //尝试从本地缓存中读取天气数据
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         String weatherString = prefs.getString("weather",null);
+        Log.d(String.valueOf(WeatherActivity.this), weatherString+"  我是weatherString");
         if (weatherString != null){
             //有缓存时直接解析天气数据
             Weather weather = Utility.handleWeatherResponse(weatherString);
+            Log.d(String.valueOf(WeatherActivity.this), weather + "   onCreate: weatherMsg");
             showWeatherInfo(weather);
+//            Log.d(String.valueOf(WeatherActivity.this), "onCreate: showWeatherInfo");
         }else{
             //无缓存时去服务器查询天气
             String weatherId = getIntent().getStringExtra("weather_id");
+            Log.d(String.valueOf(WeatherActivity.this), weatherId + "  weatherId在这里 "); //weatherId = null
             weatherLayout.setVisibility(View.INVISIBLE);
             requestWeather(weatherId);
+
         }
 
         //加载背景图片bing_pic
@@ -96,13 +112,15 @@ public class WeatherActivity extends AppCompatActivity {
         }
     }
 
-
-
     /*
     根据天气id请求城市天气信息
      */
     public void requestWeather(final String weatherId){
+//        Log.d(String.valueOf(WeatherActivity.this), weatherId + "  requestWeather之weatherId ");
         String weatherUrl = "http://guolin.tech/api/weather?cityid=" + weatherId + "&key=7993a8ed0cfc43ba8bbaafd2ba8b6ef8";
+        //http://guolin.tech/api/weather?cityid=
+        //https://free-api.heweather.com/v5/weather?city=
+        Log.d(String.valueOf(WeatherActivity.this), weatherUrl + "requestWeather: weatherUrl");
         HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -110,24 +128,30 @@ public class WeatherActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
+                        Log.d(String.valueOf(WeatherActivity.this), "获取天气信息失败 onFailed ");
                     }
                 });
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
+                Log.d("WeatherActivity", "onResponse: beforeRequestWeather");
                 final  String responseText = response.body().string();
                 final Weather weather = Utility.handleWeatherResponse(responseText);
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         if (weather != null && "ok".equals(weather.status)){
+                            Log.d(String.valueOf(WeatherActivity.this), "run: weather != null && \"ok\".equals(weather.status");
                             SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this).edit();
                             editor.putString("weather",responseText);
                             editor.apply();
+                            Log.d(String.valueOf(WeatherActivity.this), "run: apply");
                             showWeatherInfo(weather);
                         }else {
+                            Log.d("WeatherActivity", "run: Im here 2");
                             Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_SHORT).show();
+                            Log.d(String.valueOf(WeatherActivity.this), "获取天气信息失败:onSuccess ");
                         }
                     }
                 });
@@ -140,7 +164,7 @@ public class WeatherActivity extends AppCompatActivity {
     处理并展示Weather实体类中的数据
      */
     private void showWeatherInfo(Weather weather){
-
+        Log.d(TAG, "showWeatherInfo excute");
         String cityName = weather.mBasic.cityName;
         String updateTime = weather.mBasic.mUpdate.updateTime.split(" ")[1]; //？
 
